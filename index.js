@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 
 // ── Config ───────────────────────────────────────────────
-const WA_GROUP_NAME = 'PJ Pertemuan Kedua RAVEN dan Kerjasama Darmajaya';
+const WA_GROUP_NAME = 'PJ Pertemuan Kedua RAVEN dan Kerjasama Damarjaya';
 const CTFD_URL      = process.env.CTFD_URL;
 const CTFD_TOKEN    = process.env.CTFD_TOKEN;
 
