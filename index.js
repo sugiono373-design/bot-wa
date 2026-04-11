@@ -105,7 +105,7 @@ async function checkFirstBloods() {
       const msg = [
         `🩸 *FIRST BLOOD!* 🩸`,
         ``,
-  setInterval(checkFirstBloods, 30_000);
+  setInterval(checkFirstBloods, 30000);
 }
 
 // ── Endpoints ────────────────────────────────────────────
