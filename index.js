@@ -68,7 +68,7 @@ async function sendToGroup(message) {
     return c.isGroup && c.name === WA_GROUP_NAME;
   });
   if (!group) {
-    console.error('Grup tidak ditemukan!');
+    console.error('Grup tidak ditemukan! Cek nama grup.');
     return;
   }
   await group.sendMessage(message);
@@ -77,12 +77,21 @@ async function sendToGroup(message) {
 // ── Polling CTFd ─────────────────────────────────────────
 async function checkFirstBloods() {
   try {
+    console.log('Polling CTFd...');
     const res = await axios.get(CTFD_URL + '/api/v1/submissions?type=correct&per_page=100', {
       headers: { Authorization: 'Token ' + CTFD_TOKEN }
     });
 
     const submissions = res.data.data;
 
+    if (!submissions || submissions.length === 0) {
+      console.log('Belum ada submission.');
+      return;
+    }
+
+    console.log('Total submissions:', submissions.length);
+
+    // Ambil submission pertama per challenge
     const firstByChall = {};
     for (let i = 0; i < submissions.length; i++) {
       const sub = submissions[i];
@@ -97,32 +106,30 @@ async function checkFirstBloods() {
       const challId = challIds[i];
       const sub = firstByChall[challId];
 
-      if (firstBloods.has(challId)) {
+      if (firstBloods.has(String(challId))) {
+        console.log('Sudah diumumin, skip:', challId);
         continue;
       }
 
-      const challRes = await axios.get(CTFD_URL + '/api/v1/challenges/' + challId, {
-        headers: { Authorization: 'Token ' + CTFD_TOKEN }
-      });
-      const chall = challRes.data.data;
+      // Pakai data langsung dari response submission
+      const userName    = sub.user.name;
+      const challName   = sub.challenge.name;
+      const challCat    = sub.challenge.category;
+      const challPoints = sub.challenge.value;
 
-      const userRes = await axios.get(CTFD_URL + '/api/v1/users/' + sub.user_id, {
-        headers: { Authorization: 'Token ' + CTFD_TOKEN }
-      });
-      const user = userRes.data.data;
-
-      firstBloods.add(challId);
+      firstBloods.add(String(challId));
       fs.writeFileSync(STATE_FILE, JSON.stringify(Array.from(firstBloods)));
 
-      const msg = 'Pertama Solve! \n\n' +
-        '*' + user.name + '* berhasil solve pertama!\n' +
-        'Challenge: *' + chall.name + '*\n' +
-        'Kategori: ' + chall.category + '\n' +
-        'Points: ' + chall.value + '\n\n' +
-        'GG! Siapa berikutnya?';
+      const msg =
+        '🩸 *FIRST BLOOD!* 🩸\n\n' +
+        '🏆 *' + userName + '* berhasil solve pertama!\n' +
+        '📌 Challenge: *' + challName + '*\n' +
+        '📂 Kategori: ' + challCat + '\n' +
+        '⭐ Points: ' + challPoints + '\n\n' +
+        'GG! Siapa berikutnya? 🔥';
 
       await sendToGroup(msg);
-      console.log('Announced: ' + chall.name + ' by ' + user.name);
+      console.log('Announced: ' + challName + ' by ' + userName);
     }
   } catch (err) {
     console.error('Error polling CTFd:', err.message);
@@ -146,6 +153,13 @@ app.get('/qr', async function(req, res) {
   }
   const qrImage = await QRCode.toDataURL(lastQR);
   res.send('<html><body style="display:flex;flex-direction:column;align-items:center;font-family:sans-serif;margin-top:30px"><h2>Scan QR dengan WhatsApp</h2><img src="' + qrImage + '" style="width:300px;height:300px"/><p>QR expired tiap 20 detik</p><a href="/qr">Refresh QR</a></body></html>');
+});
+
+app.get('/reset', function(req, res) {
+  firstBloods = new Set();
+  fs.writeFileSync(STATE_FILE, JSON.stringify([]));
+  console.log('State direset!');
+  res.send('State direset! Bot akan umumin semua first blood lagi.');
 });
 
 app.post('/webhook', async function(req, res) {
