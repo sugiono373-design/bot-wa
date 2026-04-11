@@ -82,7 +82,13 @@ async function checkFirstBloods() {
       headers: { Authorization: 'Token ' + CTFD_TOKEN }
     });
 
-    const submissions = res.data.data;
+    console.log('Raw response:', JSON.stringify(res.data).slice(0, 300));
+
+    // Handle berbagai format response
+    let submissions = res.data.data;
+    if (!Array.isArray(submissions)) {
+      submissions = Object.values(submissions || {});
+    }
 
     if (!submissions || submissions.length === 0) {
       console.log('Belum ada submission.');
@@ -95,29 +101,31 @@ async function checkFirstBloods() {
     const firstByChall = {};
     for (let i = 0; i < submissions.length; i++) {
       const sub = submissions[i];
-      const cid = sub.challenge_id;
+      const cid = String(sub.challenge_id);
       if (!firstByChall[cid] || sub.id < firstByChall[cid].id) {
         firstByChall[cid] = sub;
       }
     }
 
     const challIds = Object.keys(firstByChall);
+    console.log('Challenge IDs ditemukan:', challIds);
+    console.log('Sudah diumumin:', Array.from(firstBloods));
+
     for (let i = 0; i < challIds.length; i++) {
       const challId = challIds[i];
       const sub = firstByChall[challId];
 
-      if (firstBloods.has(String(challId))) {
+      if (firstBloods.has(challId)) {
         console.log('Sudah diumumin, skip:', challId);
         continue;
       }
 
-      // Pakai data langsung dari response submission
-      const userName    = sub.user.name;
-      const challName   = sub.challenge.name;
-      const challCat    = sub.challenge.category;
-      const challPoints = sub.challenge.value;
+      const userName    = sub.user ? sub.user.name : 'Unknown';
+      const challName   = sub.challenge ? sub.challenge.name : 'Unknown';
+      const challCat    = sub.challenge ? sub.challenge.category : 'Unknown';
+      const challPoints = sub.challenge ? sub.challenge.value : 0;
 
-      firstBloods.add(String(challId));
+      firstBloods.add(challId);
       fs.writeFileSync(STATE_FILE, JSON.stringify(Array.from(firstBloods)));
 
       const msg =
@@ -133,6 +141,7 @@ async function checkFirstBloods() {
     }
   } catch (err) {
     console.error('Error polling CTFd:', err.message);
+    console.error('Detail error:', err.response ? JSON.stringify(err.response.data) : 'no response');
   }
 }
 
