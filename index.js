@@ -64,11 +64,17 @@ client.on('disconnected', function(reason) {
 // ── Kirim pesan ke grup ──────────────────────────────────
 async function sendToGroup(message) {
   const chats = await client.getChats();
-  const group = chats.find(function(c) {
-    return c.isGroup && c.name === WA_GROUP_NAME;
+
+  // Log semua grup yang ditemukan untuk debug
+  const groups = chats.filter(function(c) { return c.isGroup; });
+  console.log('Grup yang ditemukan:', groups.map(function(g) { return g.name; }));
+
+  const group = groups.find(function(c) {
+    return c.name === WA_GROUP_NAME;
   });
+
   if (!group) {
-    console.error('Grup tidak ditemukan! Cek nama grup.');
+    console.error('Grup tidak ditemukan! Nama grup di WA harus persis:', WA_GROUP_NAME);
     return;
   }
   await group.sendMessage(message);
@@ -79,12 +85,22 @@ async function checkFirstBloods() {
   try {
     console.log('Polling CTFd...');
     const res = await axios.get(CTFD_URL + '/api/v1/submissions?type=correct&per_page=100', {
-      headers: { Authorization: 'Token ' + CTFD_TOKEN }
+      headers: {
+        'Authorization': 'Token ' + CTFD_TOKEN,
+        'Content-Type': 'application/json'
+      }
     });
+
+    // Cek apakah response HTML (berarti tidak terauth)
+    if (typeof res.data === 'string' && res.data.includes('<!DOCTYPE')) {
+      console.error('Response HTML! Token tidak valid atau CTFD_URL salah.');
+      console.error('CTFD_URL:', CTFD_URL);
+      console.error('Token ada:', !!CTFD_TOKEN);
+      return;
+    }
 
     console.log('Raw response:', JSON.stringify(res.data).slice(0, 300));
 
-    // Handle berbagai format response
     let submissions = res.data.data;
     if (!Array.isArray(submissions)) {
       submissions = Object.values(submissions || {});
@@ -97,7 +113,6 @@ async function checkFirstBloods() {
 
     console.log('Total submissions:', submissions.length);
 
-    // Ambil submission pertama per challenge
     const firstByChall = {};
     for (let i = 0; i < submissions.length; i++) {
       const sub = submissions[i];
@@ -141,7 +156,7 @@ async function checkFirstBloods() {
     }
   } catch (err) {
     console.error('Error polling CTFd:', err.message);
-    console.error('Detail error:', err.response ? JSON.stringify(err.response.data) : 'no response');
+    console.error('Detail:', err.response ? JSON.stringify(err.response.data).slice(0, 200) : 'no response');
   }
 }
 
@@ -153,6 +168,27 @@ function startPolling() {
 // ── Endpoints ────────────────────────────────────────────
 app.get('/', function(req, res) {
   res.send('Bot aktif!');
+});
+
+app.get('/debug', async function(req, res) {
+  try {
+    const result = await axios.get(CTFD_URL + '/api/v1/submissions?type=correct&per_page=100', {
+      headers: {
+        'Authorization': 'Token ' + CTFD_TOKEN,
+        'Content-Type': 'application/json'
+      }
+    });
+    res.json({
+      ctfd_url: CTFD_URL,
+      token_ada: !!CTFD_TOKEN,
+      token_preview: CTFD_TOKEN ? CTFD_TOKEN.slice(0, 15) + '...' : 'KOSONG',
+      response_type: typeof result.data,
+      is_html: typeof result.data === 'string',
+      data_preview: JSON.stringify(result.data).slice(0, 300)
+    });
+  } catch (err) {
+    res.json({ error: err.message, ctfd_url: CTFD_URL, token_ada: !!CTFD_TOKEN });
+  }
 });
 
 app.get('/qr', async function(req, res) {
