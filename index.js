@@ -122,7 +122,7 @@ async function checkFirstBloods() {
             firstBloods.add(challId);
             fs.writeFileSync(STATE_FILE, JSON.stringify(Array.from(firstBloods)));
 
-            const msg = `Congrats ${solverName} - ${teamName}!🔥 *FIRST BLOOD!* 🔥 on ${challName} [${challCat}] [${challPoints} pts]`;
+            const msg = `Congrats ${solverName} - ${teamName}!\n🔥 *FIRST BLOOD!* 🔥 on ${challName} [${challCat}] [${challPoints} pts]`;
 
             await sendToGroup(msg);
             console.log(`[BLOOD] ${teamName} solved ${challName}`);
