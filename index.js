@@ -8,8 +8,7 @@ const app = express();
 app.use(express.json());
 
 // ── Config ───────────────────────────────────────────────
-// const WA_GROUP_NAME = 'RAVEN Community - ITERA';
-const WA_GROUP_NAME = 'Coba';
+const WA_GROUP_NAME = 'RAVEN Community - ITERA';
 const CTFD_URL      = process.env.CTFD_URL;
 const CTFD_TOKEN    = process.env.CTFD_TOKEN;
 
