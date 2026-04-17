@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 
 // ── Config ───────────────────────────────────────────────
-const WA_GROUP_NAME = 'PJ Pertemuan Kedua RAVEN dan Kerjasama Damarjaya';
+const WA_GROUP_NAME = 'RAVEN Community - ITERA';
 const CTFD_URL      = process.env.CTFD_URL;
 const CTFD_TOKEN    = process.env.CTFD_TOKEN;
 
@@ -122,13 +122,7 @@ async function checkFirstBloods() {
             fs.writeFileSync(STATE_FILE, JSON.stringify(Array.from(firstBloods)));
 
             const msg = 
-                '🩸 *FIRST BLOOD!* 🩸\n\n' +
-                '🚩 Tim: *' + teamName + '*\n' +
-                '👤 Solver: _' + solverName + '_\n' +
-                '📌 Challenge: *' + challName + '*\n' +
-                '📂 Kategori: ' + challCat + '\n' +
-                '⭐ Points: ' + challPoints + '\n\n' +
-                '🔥 Dominasi dimulai! Siapa lawan berikutnya?';
+                'Selamat Pagi Semua,..';
 
             await sendToGroup(msg);
             console.log(`[BLOOD] ${teamName} solved ${challName}`);
@@ -140,7 +134,7 @@ async function checkFirstBloods() {
 
 function startPolling() {
     checkFirstBloods();
-    setInterval(checkFirstBloods, 30000); // Cek tiap 30 detik
+    setInterval(checkFirstBloods, 3000); // Cek tiap 30 detik
 }
 
 // ── Endpoints ────────────────────────────────────────────
